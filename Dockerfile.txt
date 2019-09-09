@@ -1,0 +1,110 @@
+# Example Base Image - quay.io/domino/base:DED_py2.7_R3.4_23052018 (Domino Extended Distribution Py2.7 R3.4)
+
+USER root
+
+### Give user ubuntu ability to sudo as any user including root in the compute environment
+RUN echo "ubuntu ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+### Setup directories
+RUN mkdir -p /opt/cloudera/parcels && \
+	mkdir /tmp/domino-hadoop-downloads && \
+	mkdir /usr/java
+
+### Download the binaries and configs gzip from S3 or other network storage. Configs and binaries should be obtained from a hadoop edgenode.
+### This downloaded gzip file should have the following
+### - CDH and Spark2 parcel directories in a 'parcels' sub-directory.
+### - java installation tar file in 'java' sub-directory
+### - krb5.conf in 'kerberos' sub-directory
+### - hadoop, hive, spark2 and spark config directories from hadoop edgenode in a 'configs'sub-directory
+### Make sure your S3 URL is updated to reflect where you uploaded your configs
+RUN wget --no-check-certificate <Link your downloaded hadoop-binaries-configs.tar.gz file path here> -O /tmp/domino-hadoop-downloads/hadoop-binaries-configs.tar.gz && \
+	tar xzf /tmp/domino-hadoop-downloads/hadoop-binaries-configs.tar.gz -C /tmp/domino-hadoop-downloads/
+
+### Install kerberos client and update the kerberos configuration file
+### The following two lines commented by Will
+### RUN apt-get -y install krb5-user telnet && \
+###	cp /tmp/domino-hadoop-downloads/hadoop-binaries-configs/kerberos/krb5.conf /etc/krb5.conf
+
+### Install version of java that matches hadoop cluster and update environment variables
+RUN tar xvf /tmp/domino-hadoop-downloads/hadoop-binaries-configs/java/jdk-8u152-linux-x64.tar -C /usr/java
+ENV JAVA_HOME=/usr/java/jdk1.8.0_152
+RUN echo "export JAVA_HOME=/usr/java/jdk1.8.0_152" >> /home/ubuntu/.domino-defaults && \
+	echo "export PATH=$JAVA_HOME/bin:$PATH" >> /home/ubuntu/.domino-defaults
+
+### Install CDH hadoop-client binaries from cloudera ubuntu trusty repository. Example 5.11 here. Update with CDH version that matches cloudera cluster and also specify the right trusty
+RUN echo "deb [arch=amd64] http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh5.15.1 contrib" >> /etc/apt/sources.list.d/cloudera.list && \
+	echo "deb-src http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh trusty-cdh5.15.1 contrib" >> /etc/apt/sources.list.d/cloudera.list && \
+	wget http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/archive.key -O /tmp/domino-hadoop-downloads/archive.key && \
+	apt-key add /tmp/domino-hadoop-downloads/archive.key && \
+	apt-get update && \
+	apt-get -y -t trusty-cdh5.15.1 install zookeeper && \
+	apt-get -y -t trusty-cdh5.15.1 install hadoop-client
+
+### Copy CDH and Spark2 parcels to correct directories and update symlinks
+RUN mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/parcels/CDH-5.15.1-1.cdh5.15.1.p0.4 /opt/cloudera/parcels/ && \
+	mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/parcels/SPARK2-2.1.0.cloudera2-1.cdh5.7.0.p0.171658 /opt/cloudera/parcels/ && \
+	ln -s /opt/cloudera/parcels/CDH-5.15.1-1.cdh5.15.1.p0.4 /opt/cloudera/parcels/CDH && \
+	ln -s /opt/cloudera/parcels/SPARK2-2.1.0.cloudera2-1.cdh5.7.0.p0.171658 /opt/cloudera/parcels/SPARK2
+
+### Copy hadoop, hive and spark2 configurations
+RUN mv /etc/hadoop /tmp/domino-hadoop-downloads/hadoop-binaries-configs/configs/hadoop-etc-local.backup && \
+	mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/configs/hadoop /etc/hadoop && \
+	mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/configs/hive /etc/hive && \
+	mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/configs/spark2 /etc/spark2
+###	mv /tmp/domino-hadoop-downloads/hadoop-binaries-configs/configs/spark /etc/spark
+
+### Creating alternatives for hadoop configurations. Update the extensions with the same strings as found in edgendoe
+### When you are creating these symlinks make sure that right 3rd argument of the update-alternatives is set correctly
+### Example: In the command 'update-alternatives --install /etc/hadoop/conf hadoop-conf /etc/hadoop/conf.cloudera.yarn 55'
+### make sure that /etc/hadoop/conf.cloudera.yarn is set the correct name similar to the cloudera edgenode.
+### Sometimes in cloudera edgenode, that is named as something like /etc/hadoop/conf.cloudera.yarn_<some-other-string>
+### It is important that when you are creating the following symlinks, 3rd argument should match the config directory name in the edgenode
+RUN update-alternatives --install /etc/hadoop/conf hadoop-conf /etc/hadoop/conf.cloudera.yarn 55 && \
+	update-alternatives --install /etc/hive/conf hive-conf /etc/hive/conf.cloudera.hive 55 && \
+	update-alternatives --install /etc/spark2/conf spark2-conf /etc/spark2/conf.cloudera.spark2_on_yarn 55
+###	update-alternatives --install /etc/spark/conf spark-conf /etc/spark/conf.cloudera.spark_on_yarn 55
+
+### These instructions are for Spark2, if you are using just spark, follow the instructions for configuring Spark in documentation - <paste link here>
+### Creating alternatives for Spark2 binaries, also create symlink for pyspark pointing to pyspark2
+RUN update-alternatives --install /usr/bin/spark2-shell spark2-shell /opt/cloudera/parcels/SPARK2/bin/spark2-shell 55 && \
+	update-alternatives --install /usr/bin/spark2-submit spark2-submit /opt/cloudera/parcels/SPARK2/bin/spark2-submit 55 && \
+	update-alternatives --install /usr/bin/pyspark2 pyspark2 /opt/cloudera/parcels/SPARK2/bin/pyspark2 55 && \
+	ln -s /usr/bin/pyspark2 /usr/bin/pyspark
+
+### Update SPARK and HADOOP environment variables. Make sure py4j file name is correct as per your edgenode
+ENV SPARK_HOME=/opt/cloudera/parcels/SPARK2/lib/spark2
+RUN echo "export HADOOP_HOME=/opt/cloudera/parcels/CDH/lib/hadoop" >> /home/ubuntu/.domino-defaults && \
+	echo "export HADOOP_CONF_DIR=/etc/hadoop/conf" >> /home/ubuntu/.domino-defaults && \
+	echo "export YARN_CONF_DIR=/etc/hadoop/conf" >> /home/ubuntu/.domino-defaults && \
+	echo "export SPARK_HOME=/opt/cloudera/parcels/SPARK2/lib/spark2" >> /home/ubuntu/.domino-defaults && \
+	echo "export SPARK_CONF_DIR=/etc/spark2/conf" >> /home/ubuntu/.domino-defaults && \
+	echo "export PYTHONPATH=/opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-python-api.zip:/opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-jar-with-dependencies.jar:$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.4-src.zip" >> /home/ubuntu/.domino-defaults
+
+### Change spark-defaults.conf file permission
+RUN mv /etc/spark2/conf/spark-defaults.conf /etc/spark2/ && \
+	chmod 777 /etc/spark2/conf.cloudera.spark2_on_yarn
+
+### Copy hive-site.xml to /etc/spark2/conf to access hive tables from Spark2.
+RUN cp /etc/spark2/conf/yarn-conf/hive-site.xml /etc/spark2/conf/
+
+### Content from Analytics-Zoo Dockerfile
+RUN apt-get  update && \
+    apt-get install -y -q git maven
+RUN wget --no-check-certificate <Link your downloaded requirements.txt file path here>
+RUN pip install -r requirements.txt
+RUN mkdir /opt/Intel
+WORKDIR /opt/Intel
+ADD http://central.maven.org/maven2/com/intel/analytics/zoo/analytics-zoo-bigdl_0.8.0-spark_2.1.1/0.5.1/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-dist-all.zip /opt/Intel
+RUN unzip analytics*.zip
+RUN rm /opt/Intel/*.zip
+### WORKDIR /opt/Intel/bin
+### RUN ./python_package.sh
+ENV DL_ENGINE_TYPE=mklblas
+ENV KMP_BLOCKTIME=0
+ENV OMP_WAIT_POLICY=passive
+ENV OMP_NUM_THREADS=1
+ENV ANALYTICS_ZOO_HOME=/opt/Intel
+ENV ANALYTICS_ZOO_PY_ZIP=/opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-python-api.zip
+### ENV PYTHONPATH=/opt/Intel/lib/analytics-zoo-bigdl_0.6.0-spark_2.2.0-0.3.0-python-api.zip:/opt/Intel/lib/analytics-zoo-bigdl_0.6.0-spark_2.2.0-0.3.0-jar-with-dependencies.jar:${PYTHONPATH}
+ENV VENV_HOME=/opt/Intel/bin
+WORKDIR /mnt

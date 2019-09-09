@@ -13,7 +13,7 @@ Here is some description to understand about how the files has been organized ac
 
 ### Steps to Create Flask Project on Domino
 
-1. Login with your user credentials into [**domino.vcse.lab**](https://domino.vcse.lab/login) environment.
+1. Login with your user credentials into domino environment.
 2. On the top navigation bar, click on projects and click on new project on the top right. Name your project and click create project.
 3. Click on files tab on the left side pane add your required files/code but follow the same file structure as shown below because domino requires the same file structure format to publish the flask webApp.
 ```
@@ -57,3 +57,17 @@ spark.serializer                                    org.apache.spark.serializer.
 8. Once adding all these settings, run the code using shell script or related file by using run/launch notebook button on top right corner you can see when you select the file to run experiment.
 9. Once you start running the app.sh file for the first time it asks you to hit on `publish` as this helps the domino to make your public with a shared URL like `https://domino.vcse.lab/`. Domino server will be listening on default `port 8888` and `host 0.0.0.0`.
 10. Click on publish on the left side pane for using the app location URL to access your flask webApp everytime.
+
+### Building the Environment under Domino
+
+To create your own customized environment please follow this [**instructions**](https://support.dominodatalab.com/hc/en-us/articles/360027017092). We provided the customized docker-file and requirements file along with the code files. Please make sure you have added all the details to your docker settings when you are creating a new environment on domino and also add the pre-run and post-run bash scripts to execute at the specified step in the lifecycle of your experiment.
+
+**pre-run script:** 
+```
+cat /etc/spark2/spark-defaults.conf >> /etc/spark2/conf/spark-defaults.conf
+sed -i.bak '/spark.ui.port\=0/d' /etc/spark2/conf/spark-defaults.conf
+```
+**post-run script:**
+```
+echo "export YARN_CONF_DIR=/etc/hadoop/conf" >> /home/ubuntu/.bashrc
+```
