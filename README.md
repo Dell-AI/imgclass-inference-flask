@@ -58,7 +58,7 @@ spark.serializer                                    org.apache.spark.serializer.
 9. Once you start running the app.sh file for the first time it asks you to hit on `publish` as this helps the domino to make your public with a shared URL like `https://domino.vcse.lab/`. Domino server will be listening on default `port 8888` and `host 0.0.0.0`.
 10. Click on publish on the left side pane for using the app location URL to access your flask webApp everytime.
 
-### Building the Environment under Domino
+### Building Docker Environment under Domino
 
 To create your own customized environment please follow this [**instructions**](https://support.dominodatalab.com/hc/en-us/articles/360027017092). We provided the customized docker-file and requirements file along with the code files. Please make sure you have added all the details to your docker settings when you are creating a new environment on domino and also add the pre-run and post-run bash scripts to execute at the specified step in the lifecycle of your experiment.
 
