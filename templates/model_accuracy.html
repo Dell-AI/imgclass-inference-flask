@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block body %}
+
+<style>
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+    <div class="center">
+        <article>
+            
+            <h4>Our first task was to choose a topology which would be able to accurately identify thoracic pathologies in chest x-rays. Experiments on distributed TensorFlow framework conducted by Dell have found that ResNet-50 to scale effectively 
+            on distributed training when compared to DenseNet which consists of many repeating blocks of convolutional and batch normalization layers. It is determined that the prevalence of batch normalization layers may be the limiting factor 
+            in scaling DenseNet topology for large scale distributed training.</h4>
+            <img src="{{ url_for('static', filename='accuracy.PNG') }}" alt="model accuracy"  style="width=50%;"/>
+            <h4>As noted above ResNet yields the best results. We choose ResNet-50, pretrained with ImageNet dataset, has the primary model for our training and to perform the following hyper parameter tuning.</h4>
+    
+        </article>
+    </div>
+          
+          
+{% endblock %}

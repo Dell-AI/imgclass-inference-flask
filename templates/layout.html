@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <link href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.10.min.css" rel="stylesheet">
+  <link href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.10.min.css" rel="stylesheet">
+  <title>Chest X-Ray Inference</title>
+</head>
+
+  <style type="text/css">
+      ul {padding: 0; list-style: none; }
+      ul li {float: left; margin: 3px; }
+      ul li a, ul li a img { display: block; }
+      ul li a:hover { border: 3px solid #FF0000; overflow: hidden; }
+      ul li a:hover img{ margin: 0px; }
+    }
+  </style>
+  
+  <style>
+        /* Style the body */
+        body {
+          font-family: Arial;
+          margin: 0;
+
+        }
+
+        h1 {
+            display: inline;
+            }
+        
+        /* Header/Logo Title */
+        .header {
+          padding: 20px;
+          text-align: center;
+          background: #0076CE;
+          color: white;
+          font-size: 20px;
+          /* margin-left:-80px; */
+        }
+        
+        /* Page Content */
+        .content {padding:20px;}
+        </style>
+        
+
+<style>a {
+        text-decoration: none;
+    }
+    a:link, a:visited {
+        color: white;
+    }
+    a:hover {
+        color: #00447C;
+    }
+</style>
+
+<style>
+        body {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        .topnav {
+          width: 100%;
+          background-color: #555;
+          overflow: auto;
+        }
+        
+        .topnav a {
+          float: left;
+          display: block;
+          color: #f2f2f2;
+          text-align: center;
+          padding: 14px 16px;
+          text-decoration: none;
+          font-size: 17px;
+        }
+        
+        .topnav a:hover {
+          background-color: #ddd;
+          color: black;
+        }
+        
+        </style>
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link href="https://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+
+  <script type="text/javascript">
+  function startProgressBar(img) {
+    var elapsedtime = 0;
+    var img_id = img.id.split('.').slice(0, -1).join('.')
+    console.log(img_id)
+    var wait_time = 1000;
+    var width = 0;
+    var progressBar = document.getElementById("progress-bar");
+    var progressText = document.getElementById("progress-text");
+    document.getElementById("prog").style.display="block";
+    progressBar.removeAttribute("value")
+    progressText.innerHTML = "Processing " + img_id + " ... " + elapsedtime + " sec"
+    var id = setInterval(frame, wait_time);
+    function frame() {
+      if (elapsedtime >= 60) {
+        clearInterval(id);
+      } else {
+        elapsedtime++;
+        progressText.innerHTML = "Processing " + img_id + " ... " + elapsedtime + " sec"
+        console.log(width)
+      }
+    }
+}
+  </script>
+
+<body>
+<div class="container">
+    <div class="container" style="background-color:#007db8">
+        <img src={{url_for('static', filename='dell_logo.png')}} style="display: inline" alt="dell logo" height="128" width="128" />
+        <h1 style="display: inline"><class="page-header" style="color:white">AI-Assisted Radiology on Apache Spark - Inference Demo</h1>
+    </div>
+    
+
+    <div class="topnav">
+            <a href="{{ url_for("main_page") }}">Home</a>
+            <a class="active" href="{{ url_for("get_gallery") }}">Inference</a>
+            <a href="{{ url_for("model_details") }}">Model Summary</a>
+            <a href="{{ url_for("model_accuracy") }}">Model Accuracy</a>
+            </div>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+        integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+        crossorigin="anonymous"></script>
+        
+    {% block body %}{% endblock %}
+
+</body>
+</html>
