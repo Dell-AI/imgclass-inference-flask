@@ -85,13 +85,12 @@ def create_input_df(image_name, images_dir=TEST_IMAGES_DIR, labels_path=LABEL_PA
         image_codec=1) \
         .withColumn("Image Index", getName(col('image'))) \
         .withColumnRenamed('Image Index', 'Image_Index')
-    print("I'm here")
     print(os.path.join(images_dir, image_name))
     print(labels_path)
     labelDF = sqlContext.read.option('timestampFormat', 'yyyy/MM/dd HH:mm:ss ZZ') \
         .load(labels_path, format="csv", sep=",", inferSchema="true", header="true") \
-        .select("Image Index", "Finding Labels") \
-        .withColumn("label", getLabel(col('Finding Labels'))) \
+        .select("Image_Index", "Finding_Labels") \
+        .withColumn("label", getLabel(col('Finding_Labels'))) \
         .withColumnRenamed('Image Index', 'Image_Index')
     labelDF1 = labelDF.withColumnRenamed('Image Index', 'Image_Index') \
         .withColumnRenamed('Finding Labels', 'Finding_Labels')
