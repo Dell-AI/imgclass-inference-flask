@@ -1,0 +1,75 @@
+USER root
+
+### Give user ubuntu ability to sudo as any user including root in the compute environment
+RUN echo "ubuntu ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+#java
+RUN wget https://build.funtoo.org/distfiles/oracle-java/jdk-8u152-linux-x64.tar.gz && \
+    gunzip jdk-8u152-linux-x64.tar.gz && \
+    tar -xf jdk-8u152-linux-x64.tar -C /opt && \
+    rm jdk-8u152-linux-x64.tar && \
+    ln -s /opt/jdk1.8.0_152 /opt/jdk
+
+
+# Install Spark
+
+RUN mkdir /opt/work
+WORKDIR /opt/work
+RUN wget https://archive.apache.org/dist/spark/spark-2.1.1/spark-2.1.1-bin-hadoop2.7.tgz && \
+    tar -zxvf spark-2.1.1-bin-hadoop2.7.tgz && \
+    mv spark-2.1.1-bin-hadoop2.7 spark-2.1.1 && \
+    rm spark-2.1.1-bin-hadoop2.7.tgz
+ENV SPARK_HOME  /opt/work/spark-2.1.1
+RUN chmod 777 /opt/work/spark-2.1.1/conf
+
+RUN echo "spark.yarn.appMasterEnv.DL_ENGINE_TYPE              mklblas" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.yarn.appMasterEnv.MKL_DISABLE_FAST_MM         1" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.yarn.appMasterEnv.KMP_BLOCKTIME               0" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.yarn.appMasterEnv.OMP_WAIT_POLICY             passive" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.yarn.appMasterEnv.OMP_NUM_THREADS             1" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.shuffle.reduceLocality.enabled                false" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.shuffle.blockTransferService                  nio" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.scheduler.minRegisteredResourcesRatio         1.0" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.rpc.message.maxSize                           64" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.jars                                          /opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-jar-with-dependencies.jar" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.executor.memory                               300g" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.executor.cores                                32" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.driver.memory                                 300g" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.executor.instances                            4" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.submit.pyFiles                                /opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-python-api.zip" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.dynamicAllocation.enabled                     false" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.speculation                                   false" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+RUN echo "spark.serializer                                    org.apache.spark.serializer.JavaSerializer" >> /opt/work/spark-2.1.1/conf/spark-defaults.conf
+
+RUN chmod 777 /opt/work/spark-2.1.1/conf/spark-defaults.conf
+
+### Content from Analytics-Zoo Dockerfile
+RUN apt-get  update && \
+    apt-get install -y -q git maven
+#RUN wget --no-cache --no-check-certificate http://172.0.100.242/rb4ml/ddl-integration/requirements.txt
+#RUN pip install -r requirements.txt
+RUN pip install six psutil==5.4.5 h5py==2.7.1
+RUN pip install numpy==1.13.3 pandas scipy==1.0.0
+#python==2.7.5
+RUN pip install sklearn tensorflow==1.10.0 Keras==1.2.2
+RUN pip install ipython jupyter matplotlib
+RUN pip install ggplot plotly seaborn
+RUN pip install jupyter tensorboard==1.10.0 wordcloud 
+RUN pip install opencv-python nltk
+
+RUN mkdir /opt/Intel
+WORKDIR /opt/Intel
+ADD http://central.maven.org/maven2/com/intel/analytics/zoo/analytics-zoo-bigdl_0.8.0-spark_2.1.1/0.5.1/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-dist-all.zip /opt/Intel
+RUN unzip analytics*.zip
+RUN rm /opt/Intel/*.zip
+### WORKDIR /opt/Intel/bin
+### RUN ./python_package.sh
+ENV DL_ENGINE_TYPE=mklblas
+ENV KMP_BLOCKTIME=0
+ENV OMP_WAIT_POLICY=passive
+ENV OMP_NUM_THREADS=1
+ENV ANALYTICS_ZOO_HOME=/opt/Intel
+ENV ANALYTICS_ZOO_PY_ZIP=/opt/Intel/lib/analytics-zoo-bigdl_0.8.0-spark_2.1.1-0.5.1-python-api.zip
+### ENV PYTHONPATH=/opt/Intel/lib/analytics-zoo-bigdl_0.6.0-spark_2.2.0-0.3.0-python-api.zip:/opt/Intel/lib/analytics-zoo-bigdl_0.6.0-spark_2.2.0-0.3.0-jar-with-dependencies.jar:${PYTHONPATH}
+ENV VENV_HOME=/opt/Intel/bin
+WORKDIR /mnt
